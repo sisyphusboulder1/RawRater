@@ -5,27 +5,36 @@ import google.generativeai as genai
 import base64
 from io import BytesIO
 
-# Configure Gemini API (replace with your key)
-GEMINI_API_KEY = "AIzaSyCtKdRGeA03fVIWKSJtko__ZBDE24Dys9g"  # Your key in quotes
+# Configure Gemini API (use your key)
+GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE"  # Replace with your key
 genai.configure(api_key=GEMINI_API_KEY)
 
 # Initialize Gemini model
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-st.title("RawRater - Unfiltered Style Check")
+st.title("RawRater - Unfiltered Style Showdown")
 
-# Upload image
-uploaded_file = st.file_uploader("Drop your pic, we’ll shred it", type=["jpg", "png", "jpeg"])
+# Multiple photo upload (up to 3)
+uploaded_files = st.file_uploader(
+    "Drop up to 3 pics, we’ll shred them and rank them", 
+    type=["jpg", "png", "jpeg"], 
+    accept_multiple_files=True
+)
 
-if uploaded_file is not None:
-    # Load and display image
-    image = Image.open(uploaded_file)
-    st.image(image, caption="This is you, huh?")
-
-    # Convert image to base64 for Gemini API
-    buffer = BytesIO()
-    image.save(buffer, format="PNG")
-    img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+if uploaded_files and len(uploaded_files) <= 3:
+    # Display uploaded images
+    st.subheader("Your Contenders")
+    images = []
+    img_base64_list = []
+    for i, uploaded_file in enumerate(uploaded_files, 1):
+        image = Image.open(uploaded_file)
+        st.image(image, caption=f"Outfit {i}")
+        # Convert to base64 for Gemini
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+        images.append({"mime_type": "image/png", "data": img_base64})
+        img_base64_list.append(f"Outfit {i}")
 
     # Categories to evaluate
     categories = [
@@ -36,27 +45,38 @@ if uploaded_file is not None:
         "Adventure-Seeking Women"
     ]
 
-    # Craft prompt for Gemini
+    # Craft a detailed, savage prompt for Gemini
     prompt = (
-        f"Analyze this image of a person's outfit and provide unfiltered, savage, detailed feedback "
-        f"for how these groups would rate it out of 10: {', '.join(categories)}. "
-        f"Explain the reasoning for each rating based on style, vibe, and trends. "
-        f"Keep it raw and honest. Image data: [image]"
+        f"Analyze these {len(uploaded_files)} outfit images and provide unfiltered, savage, "
+        f"detailed feedback for how these groups would rate each one out of 10: {', '.join(categories)}. "
+        f"For each outfit, describe the style, vibe, colors, and overall impression in depth. "
+        f"Explain the reasoning for each rating based on fashion trends, cultural preferences, and raw gut reactions. "
+        f"Then, rank the outfits (1st, 2nd, 3rd) for each category with a brutal comparison—tell me why one beats the others. "
+        f"Push the detail to the max—roast them, hype them, whatever’s real. "
+        f"Label the outfits as Outfit 1, Outfit 2, etc., matching the order they’re uploaded. "
+        f"Image data follows: [image1, image2, ...]"
     )
 
-    # Send request to Gemini with image and text
-    response = model.generate_content(
-        [prompt, {"mime_type": "image/png", "data": img_base64}],
-        generation_config={
-            "temperature": 0.9,  # High creativity
-            "max_output_tokens": 500  # Detailed output
-        }
-    )
+    # Combine prompt and images for Gemini
+    content = [prompt] + images
+
+    # Send request to Gemini
+    with st.spinner("AI is tearing your style apart..."):
+        response = model.generate_content(
+            content,
+            generation_config={
+                "temperature": 1.0,  # Max creativity
+                "max_output_tokens": 1000  # Super detailed output
+            }
+        )
 
     # Display AI-generated feedback
-    st.subheader("Unhinged AI Feedback")
-    st.write(response.text)
+    st.subheader("Unhinged AI Showdown")
+    st.markdown(response.text)
 
     # Unsplash comparison
     url = "https://source.unsplash.com/random/300x200/?fashion"
-    st.image(url, caption="Trend check—how you stack up")
+    st.image(url, caption="Trend check—how you stack up to the pros")
+
+elif uploaded_files and len(uploaded_files) > 3:
+    st.error("Chill, bro—max 3 outfits. Pick your best shots.")
