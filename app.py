@@ -6,7 +6,7 @@ import base64
 from io import BytesIO
 
 # Configure Gemini API (use your key)
-GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE"  # Replace with your key
+GEMINI_API_KEY = "AIzaSyCtKdRGeA03fVIWKSJtko__ZBDE24Dys9g"  # Replace with your key
 genai.configure(api_key=GEMINI_API_KEY)
 
 # Initialize Gemini model
