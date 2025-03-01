@@ -6,8 +6,8 @@ import base64
 from io import BytesIO
 
 # Configure Gemini API (replace with your key)
-GEMINI_API_KEY = "AIzaSyCtKdRGeA03fVIWKSJtko__ZBDE24Dys9g"
-genai.configure(api_key=AIzaSyCtKdRGeA03fVIWKSJtko__ZBDE24Dys9g)
+GEMINI_API_KEY = "AIzaSyCtKdRGeA03fVIWKSJtko__ZBDE24Dys9g"  # Your key in quotes
+genai.configure(api_key=GEMINI_API_KEY)
 
 # Initialize Gemini model
 model = genai.GenerativeModel("gemini-1.5-flash")
