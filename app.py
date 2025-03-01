@@ -1,38 +1,62 @@
 import streamlit as st
-import cv2
-from PIL import Image
-import numpy as np
 import requests
+from PIL import Image
+import google.generativeai as genai
+import base64
+from io import BytesIO
+
+# Configure Gemini API (replace with your key)
+GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE"
+genai.configure(api_key=GEMINI_API_KEY)
+
+# Initialize Gemini model
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 st.title("RawRater - Unfiltered Style Check")
 
-uploaded_file = st.file_uploader("Drop your pic, let’s tear it apart", type=["jpg", "png", "jpeg"])
+# Upload image
+uploaded_file = st.file_uploader("Drop your pic, we’ll shred it", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
+    # Load and display image
     image = Image.open(uploaded_file)
-    st.image(image, caption="Here’s your mess")
+    st.image(image, caption="This is you, huh?")
 
-    img_array = np.array(image)
-    img_cv = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+    # Convert image to base64 for Gemini API
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
-    brightness = int(np.mean(img_cv))
-    st.write(f"Brightness score: {brightness} (higher = flashier)")
+    # Categories to evaluate
+    categories = [
+        "Modern Indian Women",
+        "Traditional Indian Women",
+        "College Indian Women",
+        "Intellectual Women",
+        "Adventure-Seeking Women"
+    ]
 
-    # Unsplash API (no key for basic random image)
+    # Craft prompt for Gemini
+    prompt = (
+        f"Analyze this image of a person's outfit and provide unfiltered, savage, detailed feedback "
+        f"for how these groups would rate it out of 10: {', '.join(categories)}. "
+        f"Explain the reasoning for each rating based on style, vibe, and trends. "
+        f"Keep it raw and honest. Image data: [image]"
+    )
+
+    # Send request to Gemini with image and text
+    response = model.generate_content(
+        [prompt, {"mime_type": "image/png", "data": img_base64}],
+        generation_config={
+            "temperature": 0.9,  # High creativity
+            "max_output_tokens": 500  # Detailed output
+        }
+    )
+
+    # Display AI-generated feedback
+    st.subheader("Unhinged AI Feedback")
+    st.write(response.text)
+
+    # Unsplash comparison
     url = "https://source.unsplash.com/random/300x200/?fashion"
-    st.image(url, caption="Trendy look for comparison")
-
-    if brightness > 100:
-        st.write("Rating: 7/10. Flashy and loud.")
-        st.write("- **Modern Indian Women**: Vibe with it (8/10).")
-        st.write("- **Traditional Indian Women**: Too brash (3/10).")
-        st.write("- **College Indian Women**: Cute but bold (7/10).")
-        st.write("- **Intellectual Women**: Too much (5/10).")
-        st.write("- **Adventure-Seeking Women**: Dig it (8/10).")
-    else:
-        st.write("Rating: 5/10. Subtle and tame.")
-        st.write("- **Modern Indian Women**: Not enough edge (4/10).")
-        st.write("- **Traditional Indian Women**: Like the calm (7/10).")
-        st.write("- **College Indian Women**: Cute, safe (6/10).")
-        st.write("- **Intellectual Women**: Respect the chill (6/10).")
-        st.write("- **Adventure-Seeking Women**: No spark (3/10).")
+    st.image(url, caption="Trend check—how you stack up")
