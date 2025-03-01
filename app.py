@@ -4,9 +4,10 @@ from PIL import Image
 import google.generativeai as genai
 import base64
 from io import BytesIO
+from streamlit_cropper import st_cropper
 
-# Configure Gemini API
-GEMINI_API_KEY = "AIzaSyCtKdRGeA03fVIWKSJtko__ZBDE24Dys9g"  # Replace with your key
+# Configure Gemini API with your key
+GEMINI_API_KEY = "AIzaSyCtKdRGeA03fVIWKSJtko__ZBDE24Dys9g"
 genai.configure(api_key=GEMINI_API_KEY)
 
 # Initialize Gemini model
@@ -14,24 +15,33 @@ model = genai.GenerativeModel("gemini-1.5-flash")
 
 st.title("RawRater - Unfiltered Man Showdown")
 
-# Multiple photo upload (up to 3)
+# Multiple photo upload (up to 3) with cropping
 uploaded_files = st.file_uploader(
-    "Drop up to 3 pics of men (solo or groups), we’ll judge their whole deal",
+    "Drop up to 3 pics of men (solo or groups), crop them, and we’ll judge their whole deal",
     type=["jpg", "png", "jpeg"],
     accept_multiple_files=True
 )
 
 if uploaded_files and len(uploaded_files) <= 3:
-    # Display uploaded images in a single row
-    st.subheader("The Contenders")
-    cols = st.columns(len(uploaded_files))
+    # Process and crop images
+    cropped_images = []
     image_data = []
-    for i, (col, uploaded_file) in enumerate(zip(cols, uploaded_files), 1):
-        image = Image.open(uploaded_file)
-        col.image(image, caption=f"Image {i}", use_column_width=True)
-        # Convert to base64
+    for i, uploaded_file in enumerate(uploaded_files, 1):
+        # Open the image
+        img = Image.open(uploaded_file)
+        # Cropper widget
+        st.write(f"Crop Image {i}")
+        cropped_img = st_cropper(img, realtime_update=True, box_color="#FF0000", aspect_ratio=None)
+        cropped_images.append(cropped_img)
+
+    # Display cropped images in a single row
+    st.subheader("The Contenders")
+    cols = st.columns(len(cropped_images))
+    for i, (col, cropped_img) in enumerate(zip(cols, cropped_images), 1):
+        col.image(cropped_img, caption=f"Image {i}", use_container_width=True)
+        # Convert cropped image to base64 for Gemini
         buffer = BytesIO()
-        image.save(buffer, format="PNG")
+        cropped_img.save(buffer, format="PNG")
         img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
         image_data.append({"mime_type": "image/png", "data": img_base64})
 
@@ -47,25 +57,25 @@ if uploaded_files and len(uploaded_files) <= 3:
     # Button-specific prompts
     prompts = {
         "Rate": (
-            f"You’re a balanced, no-nonsense critic. These {len(uploaded_files)} images show men (solo or groups). "
+            f"You’re a balanced, no-nonsense critic. These {len(uploaded_files)} cropped images show men (solo or groups). "
             f"For each man (label as Man 1, Man 2, etc., across images), analyze their overall appeal—outfit, facial features, expression, vibe, etc. "
             f"Rate each out of 10 for these groups: {', '.join(categories)}, reflecting how a typical Indian woman might judge them as of March 2025. "
             f"Explain briefly with neutral reasoning. Rank them (1st, 2nd, etc.) per category with a quick comparison."
         ),
         "Unhinged Rating": (
-            f"You’re a wild, unhinged critic. These {len(uploaded_files)} images show men (solo or groups). "
+            f"You’re a wild, unhinged critic. These {len(uploaded_files)} cropped images show men (solo or groups). "
             f"For each man (label as Man 1, Man 2, etc.), analyze their outfit, face, expression, vibe—everything—with over-the-top flair. "
             f"Rate each out of 10 for these groups: {', '.join(categories)}, based on extreme Indian women’s preferences in 2025. "
             f"Go crazy with reasoning—exaggerate likes and dislikes. Rank them (1st, 2nd, etc.) per category with savage comparisons."
         ),
         "Feedback": (
-            f"You’re a blunt but helpful critic. These {len(uploaded_files)} images show men (solo or groups). "
+            f"You’re a blunt but helpful critic. These {len(uploaded_files)} cropped images show men (solo or groups). "
             f"For each man (label as Man 1, Man 2, etc.), analyze their outfit, facial features, expression, vibe, etc. "
             f"Give detailed feedback on what they can improve—style, grooming, posture, whatever stands out—for appeal to these groups: {', '.join(categories)}. "
             f"Keep it raw and practical, based on 2025 Indian trends."
         ),
         "Roast Me Dead": (
-            f"You’re a merciless roasting machine. These {len(uploaded_files)} images show men (solo or groups). "
+            f"You’re a merciless roasting machine. These {len(uploaded_files)} cropped images show men (solo or groups). "
             f"For each man (label as Man 1, Man 2, etc.), tear apart their outfit, face, expression, vibe—everything. "
             f"Rate each out of 10 for these groups: {', '.join(categories)}, but focus on brutal, lowest-blow roasting. "
             f"Rank them (1st, 2nd, etc.) per category with the harshest comparisons imaginable. No mercy, 2025 Indian style."
