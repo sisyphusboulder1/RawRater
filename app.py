@@ -33,8 +33,8 @@ with col_mode2:
     if st.button("Group Rating"):
         st.session_state.mode = "group"
 
-# Proceed only if a mode is selected
-if st.session_state.mode:
+# Only show uploader and proceed if mode is selected
+if st.session_state.mode is not None:
     upload_text = (
         "Drop 1 pic of a man to crop and judge his vibe" if st.session_state.mode == "individual"
         else "Drop up to 3 pics of men (solo or groups), crop them, and we’ll rank them"
