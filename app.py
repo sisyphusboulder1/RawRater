@@ -48,7 +48,8 @@ if st.session_state.mode:
         key="uploader"
     )
 
-    if uploaded_files and (len(uploaded_files) <= (1 if st.session_state.mode == "individual" else 3)):
+    # Only proceed if files are uploaded
+    if uploaded_files is not None and len(uploaded_files) <= (1 if st.session_state.mode == "individual" else 3):
         # Process and crop images
         st.session_state.cropped_images = []
         st.session_state.image_data = []
@@ -169,5 +170,5 @@ if st.session_state.mode:
             url = "https://source.unsplash.com/random/300x200/?man,fashion"
             st.image(url, caption="Trend check—how they stack up")
 
-    elif uploaded_files and len(uploaded_files) > (1 if st.session_state.mode == "individual" else 3):
+    elif uploaded_files is not None and len(uploaded_files) > (1 if st.session_state.mode == "individual" else 3):
         st.error(f"Chill, bro—max {1 if st.session_state.mode == 'individual' else 3} image{'s' if st.session_state.mode == 'group' else ''}.")
